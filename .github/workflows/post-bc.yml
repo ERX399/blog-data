@@ -1,0 +1,103 @@
+name: Post Broadcast
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: Pages CMS payload as JSON
+        required: true
+        type: string
+
+jobs:
+  broadcast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send broadcast
+        env:
+          PAYLOAD: ${{ inputs.payload }}
+          BOT_WEBHOOK: ${{ secrets.ANNOUNCE_WEBHOOK_URL }}
+          FORUM_WEBHOOK: ${{ secrets.FORUM_WEBHOOK_URL }}
+          SECRET: ${{ secrets.ANNOUNCE_SECRET }}
+        shell: node {0}
+        run: |
+          (async () => {
+          const fs = require('fs');
+          const p = JSON.parse(process.env.PAYLOAD);
+          const ctx = p.context || {};
+          const path = ctx.path || '';
+          const slug = path.replace(/\.md$/, '').split('/').pop();
+
+          // 直接从文件读取 frontmatter（支持 YAML 折叠续行：description 的第二行
+          // 以缩进开头，续接上一行，正则只抓第一行会把内容截断）
+          let title = slug;
+          let desc = '';
+          try {
+            const content = fs.readFileSync(path, 'utf8');
+            const fm = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
+            if (fm) {
+              // 多行值提取：匹配 key: value 后接续的所有缩进行，用单空格拼接
+              const getMulti = (key) => {
+                const lines = fm[1].split('\n');
+                let started = false;
+                let parts = [];
+                for (const line of lines) {
+                  if (!started) {
+                    const m = line.match(new RegExp(`^${key}:\\s*(.*)$`));
+                    if (m) { started = true; parts.push(m[1]); }
+                  } else if (/^\s+\S/.test(line)) {
+                    parts.push(line.trim());
+                  } else {
+                    break;
+                  }
+                }
+                return parts.join(' ').replace(/^["']|["']$/g, '').trim();
+              };
+              title = getMulti('title') || slug;
+              desc = getMulti('description') || '';
+            }
+          } catch (e) {
+            // fallback to payload data
+            title = ctx.data?.title || slug;
+            desc = ctx.data?.description || '';
+          }
+
+          const summary = desc || '博客更新';
+          const url = `https://520pro.top/posts/${slug}`;
+
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.log('  文章广播推送');
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+          console.log(`  文章:  ${slug}`);
+          console.log(`  标题:  ${title}`);
+          console.log(`  描述:  ${desc}`);
+          console.log(`  URL:   ${url}\n`);
+
+          const body = JSON.stringify({ title, summary, url });
+
+          async function send(webhook, label) {
+            console.log(`  → 发送到 ${label}...`);
+            const resp = await fetch(webhook, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Announce-Secret': process.env.SECRET,
+              },
+              body,
+            });
+            const text = await resp.text();
+            if (resp.ok) {
+              console.log(`  ✅ ${label} 成功 (${resp.status})`);
+              try { console.log(`  响应: ${JSON.stringify(JSON.parse(text), null, 2)}`); }
+              catch { console.log(`  响应: ${text}`); }
+            } else {
+              console.error(`  ❌ ${label} 失败 (${resp.status}): ${text}`);
+              throw new Error(`${label} 失败`);
+            }
+          }
+
+          await send(process.env.BOT_WEBHOOK, 'Bot 广播');
+          await send(process.env.FORUM_WEBHOOK, '论坛邮件');
+          console.log('\n  ✅ 全部推送完成\n');
+          })();
