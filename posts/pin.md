@@ -1,7 +1,7 @@
 ---
 title: 加群向导
 description: 关于如何联系夏之~
-coverImage: /img/QQ.webp
+coverImage: /img/qq-group-qr.svg
 date: 2025-05-23
 draft: false
 pin: true
