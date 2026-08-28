@@ -2,7 +2,7 @@
 title: 加群向导
 description: 关于如何联系夏之~
 coverImage: https://img.399520.xyz
-date: 2025-05-23
+date: 2025-05-20
 draft: false
 pin: true
 ---
