@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Workers
+name: Generate Build Artifacts
 
 on:
   push:
@@ -19,11 +19,10 @@ on:
         type: string
 
 jobs:
-  deploy:
+  generate:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      deployments: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,35 +55,5 @@ jobs:
           cp -r img/* dist/img/
           cp _headers dist/
 
-      - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          wranglerVersion: "4"
-          command: deploy
-
-      # 通知大前端（520pro.top）重建：博客正文已改为构建期预渲染成静态壳
-      # （posts/<slug>/index.html），新文章/改文必须让大前端重新构建并部署
-      # （deploy-cf.mjs → wrangler）预渲染壳才会跟上。前端那边
-      # .github/workflows/blog-redeploy.yml 监听 repository_dispatch。
-      #
-      # 需要给本仓库加一个 secret：SVAF_DEPLOY_PAT —— 对 ERX399/frontend
-      # 有 repo 权限的 PAT（经典 PAT 或 fine-grained 都行）。没配时跳过并警告。
-      # 失败不该阻断已经成功的 CDN 部署，所以 continue-on-error —— 但仍会显红。
-      #
-      # 之前那个 /internal/revalidate webhook 是给已失联的 Oracle VPS 用的，已废弃。
-      - name: 触发大前端重建（博客预渲染壳同步）
-        continue-on-error: true
-        env:
-          PAT: ${{ secrets.SVAF_DEPLOY_PAT }}
-        run: |
-          if [ -z "$PAT" ]; then
-            echo "::warning::未配置 SVAF_DEPLOY_PAT，跳过触发大前端重建"
-            exit 0
-          fi
-          curl -sS -X POST \
-            -H "Authorization: Bearer $PAT" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/ERX399/frontend/dispatches \
-            -d '{"event_type":"blog-updated"}'
+      # 部署不在此处：raw-posts.520pro.top 与 520pro.top 均挂 Cloudflare Pages，
+      # 都直连 git 在 push 到 main 后自动构建，无需 wrangler deploy，也无需跨仓库 dispatch。
