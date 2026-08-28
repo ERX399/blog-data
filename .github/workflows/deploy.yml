@@ -1,6 +1,16 @@
 name: Deploy to Cloudflare Workers
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'posts/**'
+      - 'img/**'
+      - 'generate-posts.js'
+      - 'convert-to-webp.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '_headers'
   workflow_dispatch:
     inputs:
       payload:
