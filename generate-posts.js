@@ -11,7 +11,7 @@ const OUTPUT = join(__dirname, "posts.json");
 var FEED_OUTPUT = join(__dirname, "rss.xml");
 // 订阅源的正式地址挂在 /posts 名下（源里只有博客文章，没有论坛内容）。
 // 站点侧 /rss.xml 保留为 301，老订阅者不会掉线。
-var SELF_URL = "https://520pro.top/posts/rss.xml";
+var SELF_URL = "https://blog.520pro.top/posts/rss.xml";
 
 const SITE_URL = "https://raw-posts.520pro.top/";
 const SITE_TITLE = "博客 | 夏之";
@@ -313,7 +313,7 @@ function localImageSize(imageUrl) {
 
 /** Build an RSS 2.0 feed from the visible (non-draft, non-hidden) posts */
 function generateRssFeed(allPosts, allRawPosts) {
-  var RSS_URL = "https://520pro.top/";
+  var RSS_URL = "https://blog.520pro.top/";
   // 全量输出，不截断：RSS 只有文本、不含图片资源本身，体积可控。
   // allPosts 是**按日期倒序**的那份（见文件上方的 posts.sort）。别改成
   // visibleSorted —— 那份是「置顶优先」，会让老置顶帖占住订阅源的最前面。
@@ -432,7 +432,7 @@ console.log("Copied posts.json + " + pageCount + " page files + rss.xml into dis
 // ---- XSL 样式表 ----
 // rss.xml / sitemap.xml 里的 <?xml-stylesheet?> 指向 /xsl/*.xsl。XSLT 受同源
 // 策略约束，所以每个提供订阅源的域名下都得有一份：这里是 raw-posts.520pro.top，
-// 520pro.top 那份在 svaf-next 的 public/xsl/。两处内容应保持一致。
+// blog.520pro.top 那份在 svaf-next 的 public/xsl/。两处内容应保持一致。
 mkdirSync(join(__dirname, "dist", "xsl"), { recursive: true });
 for (const xslFile of readdirSync(join(__dirname, "xsl"))) {
   if (!xslFile.endsWith(".xsl")) continue;
@@ -452,9 +452,9 @@ console.log("Copied XSL stylesheets into dist/xsl/");
 // 路径策略（与主站约定一致）：
 //   - 图片等硬资源 → 绝对 URL（内容托管在 raw-posts.520pro.top）
 //   - 其余站内链接 → 相对路径（无域名，两域名下都可用）
-//   - canonical / og:url / JSON-LD 页面地址 → 硬指向权威域名 520pro.top（防收录分裂）
+//   - canonical / og:url / JSON-LD 页面地址 → 硬指向权威域名 blog.520pro.top（防收录分裂）
 // SEO 常量对齐主仓 src/lib/seo/route-meta.ts 与 worker/index.ts。
-var MAIN_URL = "https://520pro.top"; // 权威域名（用户真正访问的站点）
+var MAIN_URL = "https://blog.520pro.top"; // 权威域名（用户真正访问的站点）
 var MAIN_NAME = "夏之";
 var DEFAULT_OG_IMAGE = MAIN_URL + "/files/img/official.png";
 // 站点/作者头像（与主站 siteConfig.bio.avatar、index.html favicon 同源；外链硬资源写绝对）
@@ -606,7 +606,7 @@ console.log(
   "Generated " + visibleSorted.length + " SEO pages into dist/seo/posts/ + list dist/seo/posts.html"
 );
 
-// ---- 博客 sitemap 分片：URL 全部 canonical 指向主站 520pro.top ----
+// ---- 博客 sitemap 分片：URL 全部 canonical 指向主站 blog.520pro.top ----
 // 由主站 sitemap 索引引用（/posts/sitemap.xml → 本文件），博客每次构建即刷新。
 var sitemapUrls = [];
 for (var si = 0; si < visibleSorted.length; si++) {
