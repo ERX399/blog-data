@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'posts/**'
+      - 'announcements/**'
       - 'img/**'
       - 'generate-posts.js'
       - 'convert-to-webp.js'
@@ -44,7 +45,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add posts.json posts-*.json rss.xml
+          git add posts.json posts-*.json rss.xml announcements.json
           git diff --staged --quiet || (
             git commit -m "🤖 自动生成数据 [skip ci]"
             git push

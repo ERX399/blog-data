@@ -7,6 +7,8 @@ const { join } = require("path");
 const { marked } = require("marked");
 
 const POSTS_DIR = join(__dirname, "posts");
+const ANNOUNCE_DIR = join(__dirname, "announcements");
+const ANNOUNCE_OUTPUT = join(__dirname, "announcements.json");
 const OUTPUT = join(__dirname, "posts.json");
 var FEED_OUTPUT = join(__dirname, "rss.xml");
 // 订阅源的正式地址挂在 /posts 名下（源里只有博客文章，没有论坛内容）。
@@ -195,6 +197,47 @@ posts.sort((a, b) => {
   return 0;
 });
 
+// ---- 公告 ----
+// 与文章同构：announcements/*.md + frontmatter，字段更少（无封面/标签/置顶）。
+// 目录不存在时安静跳过，老部署不受影响。
+// 与文章同构：announcements/*.md + frontmatter，字段更少（无封面/标签/置顶）。
+// 目录不存在时安静跳过，老部署不受影响。
+const announcements = [];
+if (statSync(ANNOUNCE_DIR, { throwIfNoEntry: false })) {
+  for (const file of readdirSync(ANNOUNCE_DIR)) {
+    if (!file.endsWith(".md") && !file.endsWith(".markdown")) continue;
+    const raw = readFileSync(join(ANNOUNCE_DIR, file), "utf-8").replace(/\r\n/g, "\n");
+    const slug = file.replace(/\.(md|markdown)$/, "");
+    const match = raw.match(/^---\n([\s\S]*?)\n---\n/);
+    if (!match) {
+      console.warn("⚠️  announcements/" + file + ": no frontmatter found");
+      continue;
+    }
+    const fm = parseFrontmatter(match[1]);
+    const body = raw.slice(match[0].length);
+    if (!fm.title) {
+      console.warn("⚠️  announcements/" + file + ": no title");
+      continue;
+    }
+    announcements.push({
+      slug,
+      title: fm.title,
+      description: fm.description || "",
+      published: fm.date || "",
+      category: fm.category || undefined,
+      status: fm.status || undefined,
+      draft: fm.draft === true || fm.draft === "true",
+      body,
+    });
+  }
+  announcements.sort(function (a, b) {
+    if (a.published && b.published) return b.published.localeCompare(a.published);
+    if (a.published) return -1;
+    if (b.published) return 1;
+    return 0;
+  });
+}
+
 // ---- Paginated index + page files ----
 // posts.json 从「全量数组」升级为「索引对象」：{ generatedAt, perPage, total, pageCount, posts }。
 // posts 为可见文章（已过滤 draft/hide），排序为置顶优先、再按日期倒序——
@@ -222,6 +265,16 @@ writeFileSync(
   "utf-8"
 );
 console.log("Rewrote posts.json as paginated index: " + total + " visible posts, " + pageCount + " pages");
+
+// ---- 公告索引 ----
+// 公告不分页，一次全给（量本来就少）。draft 过滤对外不可见。
+var visibleAnn = announcements.filter(function (a) { return !a.draft; });
+writeFileSync(
+  ANNOUNCE_OUTPUT,
+  JSON.stringify({ generatedAt: generatedAt, total: visibleAnn.length, announcements: visibleAnn }, null, 2),
+  "utf-8"
+);
+console.log("Rewrote announcements.json: " + visibleAnn.length + " announcements");
 
 for (var pg = 0; pg < pageCount; pg++) {
   var slice = visibleSorted.slice(pg * PER_PAGE, (pg + 1) * PER_PAGE);
@@ -427,7 +480,12 @@ for (var dpg = 0; dpg < pageCount; dpg++) {
   );
 }
 writeFileSync(join(__dirname, "dist", "rss.xml"), readFileSync(FEED_OUTPUT, "utf-8"), "utf-8");
-console.log("Copied posts.json + " + pageCount + " page files + rss.xml into dist/");
+writeFileSync(
+  join(__dirname, "dist", "announcements.json"),
+  JSON.stringify({ generatedAt: generatedAt, total: visibleAnn.length, announcements: visibleAnn }, null, 2),
+  "utf-8"
+);
+console.log("Copied posts.json + " + pageCount + " page files + rss.xml + announcements.json into dist/");
 
 // ---- XSL 样式表 ----
 // rss.xml / sitemap.xml 里的 <?xml-stylesheet?> 指向 /xsl/*.xsl。XSLT 受同源
