@@ -15,7 +15,7 @@ var FEED_OUTPUT = join(__dirname, "rss.xml");
 // 站点侧 /rss.xml 保留为 301，老订阅者不会掉线。
 var SELF_URL = "https://blog.520pro.top/posts/rss.xml";
 
-const SITE_URL = "https://raw-posts.520pro.top/";
+const SITE_URL = "https://blog-data.520pro.top/";
 const SITE_TITLE = "博客 | 夏之";
 const SITE_DESC = "《夏之》是一个专注于IT/互联网技术分享与实践的个人技术博客，在这里你可以找到众多前沿技术的分享与实践经验。";
 const AUTHOR_NAME = "夏之";

@@ -1,5 +1,5 @@
 /** Site 全局配置 — 作为所有外链的统一域名来源 */
-export const domain = "raw-posts.520pro.top";
+export const domain = "blog-data.520pro.top";
 
 export const siteUrl = `https://${domain}/`;
 
