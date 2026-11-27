@@ -40,14 +40,15 @@ jobs:
       - run: node generate-posts.js
 
       # 生成产物（posts.json / posts-*.json / rss.xml）写回仓库，本地无需再手跑脚本。
-      # 用 GITHUB_TOKEN 提交，GitHub 不会因此递归触发本 workflow；[skip ci] 再兜底一层。
+      # 用 GITHUB_TOKEN 提交，GitHub 不会因此递归触发本 workflow；
+      # 不要加 [skip ci]：Cloudflare Pages 会跳过带该标记的提交，新产物不会部署。
       - name: 生成产物回写仓库
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add posts.json posts-*.json rss.xml announcements.json
           git diff --staged --quiet || (
-            git commit -m "🤖 自动生成数据 [skip ci]"
+            git commit -m "🤖 自动生成数据"
             git push
           )
 
